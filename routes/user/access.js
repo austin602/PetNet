@@ -1,24 +1,43 @@
-var express = require('express');
+var express = require ('express');
+var router = express.Router ();
 
-var router = express.Router();
-
-var User = require('../model/user.js');
+var User = require ('../../model/user.js');
 
 var auth = function(request, response, next) {
     if (request.session && request.session.user === 'testadmin' && request.session.admin) {
-    return next();
+        return next();
     }
     else {
         return response.sendStatus(401);
     }
 }
+router.get('/register', function(request, response) {
+    response.render('/register');
+});
+
+router.post('/register', function(request, response) {
+    var newUser = User(request.body);
+
+    newUser.save (function(error) {
+        if(error) {
+            var errorMessage = 'Unable to save the user to the database.'
+            console.error('***ERROR: ', errorMessage);
+            console.error(error);
+            response.send(errorMessage);
+        }
+        else {
+            request.flash('success', 'Registered Successfully, please login.');
+            response.redirect('/user/login');
+        }
+    });
+});
 
 router.get('/login', function(request, response) {
     if (request.session.user) {
         response.redirect('/search');
     }
     else {
-        response.render('login');
+        response.render('/login');
     }
 });
 
@@ -53,32 +72,12 @@ router.post('/login', function(request, response) {
         }
     );
 });
+// NOTE: this destroys the session
 
-router.get('/register', function(request, response) {
-    response.render('register');
-});
-
-router.post('/register', function(request, response) {
-    var newUser = User(request.body);
-
-    newUser.save (function(error) {
-        if(error) {
-            var errorMessage = 'Unable to save the user to the database.'
-            console.error('***ERROR: ', errorMessage);
-            console.error(error);
-            response.send(errorMessage);
-        }
-        else {
-            request.flash('success', 'Registered Successfully, please login.');
-            response.redirect('/user/login');
-        }
-    });
-});
-
-router.get('/logout', function(request, response) {
-    request.session.destroy();
-
-    response.redirect('/user/login');
-});
+router.get ('/logout', function (request, response) {
+    request.session.destroy ();
+    console.log('session destroyed', request.session);
+    response.redirect ('/user/login')
+})
 
 module.exports = router;
